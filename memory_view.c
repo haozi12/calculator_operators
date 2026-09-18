@@ -1,7 +1,6 @@
 #include "include/memory_view.h"
 #include "include/workspace.h"
-#include <stdio.h>
-int memory_view(value_t source,size_t bits){
+int memory_view(value_t source,size_t bits,FILE* stream){
     int status_code = SUCCESS;
     if (source == NULL){
         status_code = NULL_POINTER;
@@ -13,32 +12,32 @@ int memory_view(value_t source,size_t bits){
     }
     size_t bytes = bits / 8;
     int8_unsigned* temp = (int8_unsigned*)source;
-    printf("Hex:");
+    fprintf(stream,"Hex:");
     for (size_t i = bytes; i > 0; i--){
         if (i != bytes){
-            printf(" ");
+            fprintf(stream," ");
         }
-        printf("%02X",(int8_unsigned)temp[i - 1]);
+        fprintf(stream,"%02X",(int8_unsigned)temp[i - 1]);
     }
-    printf("\n");
-    printf("Oct:");
+    fprintf(stream,"\n");
+    fprintf(stream,"Oct:");
     for (size_t i = bytes; i > 0; i--){
         if (i != bytes){
-            printf(" ");
+            fprintf(stream," ");
         }
-        printf("%03o",(int8_unsigned)temp[i - 1]);
+        fprintf(stream,"%03o",(int8_unsigned)temp[i - 1]);
     }
-    printf("\n");
-    printf("Bin:");
+    fprintf(stream,"\n");
+    fprintf(stream,"Bin:");
     for (size_t i = bytes; i > 0; i--){
         if (i != bytes){
-            printf(" ");
+            fprintf(stream," ");
         }
         for (int j = 7; j >= 0; j--){
-            printf("%u",((int8_unsigned)temp[i - 1] >> j) & 1);
+            fprintf(stream,"%u",((int8_unsigned)temp[i - 1] >> j) & 1);
         }
     }
-    printf("\n");
+    fprintf(stream,"\n");
 exit:
     return status_code;
 }
