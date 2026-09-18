@@ -1,7 +1,9 @@
 #pragma once
 #ifndef WORK_SPACE_H 
 #define WORK_SPACE_H
-
+/* 
+	created by haozi12
+*/
 #include <stddef.h>
 #include <stdalign.h>
 #include "c_types.h"
@@ -17,6 +19,8 @@ typedef void* value_t;
 enum StatusCode {
 	NULL_POINTER = 1,
 	INVALID_SIZE = 2,
+	INTEGER_ZERO_DIVISION = 3,
+	SHIFT_OVERFLOWED = 4,
 	SUCCESS = 0,
 };
 
