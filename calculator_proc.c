@@ -9,7 +9,10 @@ struct calculator_data
 	bool is_float;
 	bool is_int_mode;
 	bool is_unsigned;
-	alignas(long long) int8_unsigned value[8];
+	enum Operator last_op;
+	alignas(long long) int8_unsigned Last_op_1[8];
+	alignas(long long) int8_unsigned Last_op_2[8];
+	alignas(long long) int8_unsigned Last_result[8];
 	enum Size size;
 };
 
@@ -112,7 +115,10 @@ calculator_t* new_calculator(enum Mode mode, enum Size size,bool unsigned_flag)
 			calc->data->size = 32;
 		}
 	}
-	memset(calc->data->value, 0, sizeof(calc->data->value));
+	memset(calc->data->Last_op_1, 0, Calculator_Value_Size);
+	memset(calc->data->Last_op_2, 0, Calculator_Value_Size);
+	memset(calc->data->Last_result, 0, Calculator_Value_Size);
+	calc->data->last_op = NOTHING;
 	calc-> xor = op_xor_;
 	calc-> and = op_and_;
 	calc-> or = op_or_;
@@ -168,24 +174,31 @@ exit:
 	return status_code;
 }
 
-int save_value_to_calculator(calculator_t* calc, value_t value) {
+int save_Last(calculator_t* calc, value_t op_1, value_t op_2,value_t result, enum Operator op)
+{
 	int status_code = SUCCESS;
-	if (calc == NULL || calc->data == NULL || value == NULL) {
+	if (calc == NULL || calc->data == NULL || op_1 == NULL || op_2 == NULL) {
 		status_code = NULL_POINTER;
 		goto exit;
 	}
-	memcpy(calc->data->value, value, sizeof(calc->data->value));
+	calc->data->last_op = op;
+	memcpy(calc->data->Last_op_1, op_1,Calculator_Value_Size);
+	memcpy(calc->data->Last_op_2, op_2, Calculator_Value_Size);
+	memcpy(calc->data->Last_result, result, Calculator_Value_Size);
 exit:
 	return status_code;
 }
 
-int get_value_from_calculator(calculator_t* calc, value_t value) {
+int get_Last(calculator_t* calc, value_t op_1 , value_t op_2,value_t result,enum Operator *op) {
 	int status_code = SUCCESS;
-	if (calc == NULL || calc->data == NULL || value == NULL) {
+	if (calc == NULL || calc->data == NULL || op_1 == NULL || op_2 == NULL) {
 		status_code = NULL_POINTER;
 		goto exit;
 	}
-	memcpy(value, calc->data->value, sizeof(calc->data->value));
+	*op = calc->data->last_op;
+	memcpy(op_1,calc->data->Last_op_1, Calculator_Value_Size);
+	memcpy(op_2,calc->data->Last_op_2, Calculator_Value_Size);
+	memcpy(result,calc->data->Last_result,Calculator_Value_Size);
 exit:
 	return status_code;
 }

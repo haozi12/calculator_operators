@@ -17,7 +17,7 @@ int memory_view(value_t source,size_t bits,FILE* stream){
         if (i != bytes){
             fprintf(stream," ");
         }
-        fprintf(stream,"%02X",(int8_unsigned)temp[i - 1]);
+        fprintf(stream,"%02X",(unsigned)temp[i - 1]);
     }
     fprintf(stream,"\n");
     fprintf(stream,"Oct:");
@@ -25,7 +25,7 @@ int memory_view(value_t source,size_t bits,FILE* stream){
         if (i != bytes){
             fprintf(stream," ");
         }
-        fprintf(stream,"%03o",(int8_unsigned)temp[i - 1]);
+        fprintf(stream,"%03o",(unsigned)temp[i - 1]);
     }
     fprintf(stream,"\n");
     fprintf(stream,"Bin:");
@@ -34,7 +34,7 @@ int memory_view(value_t source,size_t bits,FILE* stream){
             fprintf(stream," ");
         }
         for (int j = 7; j >= 0; j--){
-            fprintf(stream,"%u",((int8_unsigned)temp[i - 1] >> j) & 1);
+            fprintf(stream,"%u", (unsigned)((unsigned)temp[i - 1] >> j) & 1);
         }
     }
     fprintf(stream,"\n");

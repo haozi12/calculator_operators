@@ -1,4 +1,5 @@
 #include "include/operator.h"
+#include <limits.h>
 int divide(value_t a, value_t b, size_t bits, bool is_unsigned, bool is_float, value_t result) {
 	int status_code = SUCCESS;
 	if (a == NULL || b == NULL || result == NULL) {
@@ -85,12 +86,20 @@ int divide(value_t a, value_t b, size_t bits, bool is_unsigned, bool is_float, v
 				status_code = INTEGER_ZERO_DIVISION;
 				goto exit;
 			}
+			if (*(int32_signed*)a == INT_MIN && *(int32_signed*)b == -1) {
+				status_code = INTEGER_DIVISION_OVERFLOW;
+				goto exit;
+			}
 			*(int32_signed*)result = *(int32_signed*)a / *(int32_signed*)b;
 			goto exit;
 			break;
 		case 64:
 			if (*(int64_signed*)b == 0) {
 				status_code = INTEGER_ZERO_DIVISION;
+				goto exit;
+			}
+			if (*(int64_signed*)a == LLONG_MIN && *(int64_signed*)b == -1) {
+				status_code = INTEGER_DIVISION_OVERFLOW;
 				goto exit;
 			}
 			*(int64_signed*)result = *(int64_signed*)a / *(int64_signed*)b;

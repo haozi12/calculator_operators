@@ -9,21 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-enum Operator {
-	NOTHING,
-	OP_XOR,
-	OP_AND,
-	OP_OR,
-	OP_NOT,
-	OP_SHIFT_LEFT,
-	OP_SHIFT_RIGHT,
-	OP_ADD,
-	OP_SUBTRACT,
-	OP_MULTIPLY,
-	OP_DIVIDE,
-	OP_MODULO
-};
-
+const char* calc_ops[] = {"nothing","xor","and","or","not","shift_left","shift_right","add","subtract","multiply","divide","modulo"};
 typedef struct calc_app_t calc_app_t;
 
 typedef int (*app_function)(calc_app_t* app);
@@ -42,8 +28,8 @@ typedef struct calc_app_t{
 	app_function calculate;
 	FILE* output_stream;
 	int (*set_oprands)(calc_app_t* app, value_t oprand_1, value_t oprand_2);
-	int (*app_save_value)(calc_app_t* app, value_t value);
-	int (*get_saved_value)(calc_app_t* app, value_t value);
+	app_function get_last;
+	app_function save_last;
 	int (*switch_operator)(calc_app_t* app, enum Operator op);
 	int (*switch_mode)(calc_app_t* app, enum Mode mode, enum Size size, bool unsigned_flag);
 }calc_app_t;
@@ -51,8 +37,8 @@ typedef struct calc_app_t{
 calc_app_t* new_calc_app(enum Mode mode, enum Size size, bool unsigned_flag,FILE* out_stream);
 int calc_app_destroy(calc_app_t* app);
 int app_value_display(calc_app_t* app);
-int app_save_value(calc_app_t* app, value_t value);
-int app_get_saved_value(calc_app_t* app, value_t value);
+int app_save_last(calc_app_t* app);
+int app_get_last(calc_app_t* app);
 int switch_calc_app_mode(calc_app_t* app, enum Mode mode, enum Size size, bool unsigned_flag);
 int app_calculate(calc_app_t* app);
 int app_set_oprands(calc_app_t* app,value_t oprand_1,value_t oprand_2);
@@ -61,8 +47,11 @@ int run_app(int argc,char** argv);
 
 
 calc_app_t* new_calc_app(enum Mode mode, enum Size size, bool unsigned_flag,FILE* out_stream) {
+	if (out_stream == NULL) {
+		return NULL;
+	}
 	calc_app_t* app = (calc_app_t*)malloc(sizeof(calc_app_t));
-	if (app == NULL || out_stream == NULL) {
+	if (app == NULL) {
 		return NULL;
 	}
 	app->calc = new_calculator(mode, size, unsigned_flag);
@@ -82,11 +71,10 @@ calc_app_t* new_calc_app(enum Mode mode, enum Size size, bool unsigned_flag,FILE
 	app->current_operator = OP_ADD;
 	app->calculate = app_calculate;
 	app->value_display = app_value_display;
-	app->app_save_value = app_save_value;
-	app->get_saved_value = app_get_saved_value;
+	app->save_last = app_save_last;
+	app->get_last = app_get_last;
 	app->switch_mode = switch_calc_app_mode;
 	app->switch_operator = app_switch_operator;
-
 	return app;
 }
 
@@ -99,18 +87,18 @@ int calc_app_destroy(calc_app_t* app) {
 	return SUCCESS;
 }
 
-int app_save_value(calc_app_t* app, value_t value) {
-	if (app == NULL || value == NULL) {
+int app_save_last(calc_app_t* app) {
+	if (app == NULL) {
 		return NULL_POINTER;
 	}
-	return save_value_to_calculator(app->calc, value);
+	return save_Last(app->calc,app->oprand_1.value,app->oprand_2.value,app->result.value,app->current_operator);
 }
 
-int app_get_saved_value(calc_app_t* app, value_t value) {
-	if (app == NULL || value == NULL) {
+int app_get_last(calc_app_t* app) {
+	if (app == NULL) {
 		return NULL_POINTER;
 	}
-	return get_value_from_calculator(app->calc, value);
+	return get_Last(app->calc, app->oprand_1.value,app->oprand_2.value,app->result.value,&app->current_operator);
 }
 
 int switch_calc_app_mode(calc_app_t* app, enum Mode mode, enum Size size, bool unsigned_flag) {
@@ -154,6 +142,7 @@ int app_value_display(calc_app_t* app) {
 				fprintf(app->output_stream, "oprand_2: %f\n", get_float32_value(app->oprand_2.value));
 				break;
 			}
+			fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 			fprintf(app->output_stream, "result: %f\n", get_float32_value(app->result.value));
 			memory_view(app->result.value, 32, app->output_stream);
 			break;
@@ -172,6 +161,7 @@ int app_value_display(calc_app_t* app) {
 				fprintf(app->output_stream, "oprand_2: %lf\n", get_float64_value(app->oprand_2.value));
 				break;
 			}
+			fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 			fprintf(app->output_stream, "result: %lf\n", get_float64_value(app->result.value));
 			memory_view(app->result.value, 64, app->output_stream);
 			break;
@@ -186,24 +176,28 @@ int app_value_display(calc_app_t* app) {
 			case 8:
 				fprintf(app->output_stream, "oprand_1: %u\n", get_int8_unsigned_value(app->oprand_1.value));
 				fprintf(app->output_stream, "oprand_2: %u\n", get_int8_unsigned_value(app->oprand_2.value));
+				fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 				fprintf(app->output_stream, "result: %u\n", get_int8_unsigned_value(app->result.value));
 				memory_view(app->result.value, 8, app->output_stream);
 				break;
 			case 16:
 				fprintf(app->output_stream, "oprand_1: %u\n", get_int16_unsigned_value(app->oprand_1.value));
 				fprintf(app->output_stream, "oprand_2: %u\n", get_int16_unsigned_value(app->oprand_2.value));
+				fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 				fprintf(app->output_stream, "result: %u\n", get_int16_unsigned_value(app->result.value));
 				memory_view(app->result.value, 16, app->output_stream);
 				break;
 			case 32:
 				fprintf(app->output_stream, "oprand_1: %u\n", get_int32_unsigned_value(app->oprand_1.value));
 				fprintf(app->output_stream, "oprand_2: %u\n", get_int32_unsigned_value(app->oprand_2.value));
+				fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 				fprintf(app->output_stream, "result: %u\n", get_int32_unsigned_value(app->result.value));
 				memory_view(app->result.value, 32, app->output_stream);
 				break;
 			case 64:
 				fprintf(app->output_stream, "oprand_1: %llu\n", get_int64_unsigned_value(app->oprand_1.value));
 				fprintf(app->output_stream, "oprand_2: %llu\n", get_int64_unsigned_value(app->oprand_2.value));
+				fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 				fprintf(app->output_stream, "result: %llu\n", get_int64_unsigned_value(app->result.value));
 				memory_view(app->result.value, 64, app->output_stream);
 				break;
@@ -217,18 +211,21 @@ int app_value_display(calc_app_t* app) {
 			case 8:
 				fprintf(app->output_stream, "oprand_1: %d\n", get_int8_signed_value(app->oprand_1.value));
 				fprintf(app->output_stream, "oprand_2: %d\n", get_int8_signed_value(app->oprand_2.value));
+				fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 				fprintf(app->output_stream, "result: %d\n", get_int8_signed_value(app->result.value));
 				memory_view(app->result.value, 8, app->output_stream);
 				break;
 			case 16:
 				fprintf(app->output_stream, "oprand_1: %d\n", get_int16_signed_value(app->oprand_1.value));
 				fprintf(app->output_stream, "oprand_2: %d\n", get_int16_signed_value(app->oprand_2.value));
+				fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 				fprintf(app->output_stream, "result: %d\n", get_int16_signed_value(app->result.value));
 				memory_view(app->result.value, 16, app->output_stream);
 				break;
 			case 32:
 				fprintf(app->output_stream, "oprand_1: %d\n", get_int32_signed_value(app->oprand_1.value));
 				fprintf(app->output_stream, "oprand_2: %d\n", get_int32_signed_value(app->oprand_2.value));
+				fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 				fprintf(app->output_stream, "result: %d\n", get_int32_signed_value(app->result.value));
 				memory_view(app->result.value, 32, app->output_stream);
 				break;
@@ -236,6 +233,7 @@ int app_value_display(calc_app_t* app) {
 			case 64:
 				fprintf(app->output_stream, "oprand_1: %lld\n", get_int64_signed_value(app->oprand_1.value));
 				fprintf(app->output_stream, "oprand_2: %lld\n", get_int64_signed_value(app->oprand_2.value));
+				fprintf(app->output_stream, "operator: %s\n", calc_ops[app->current_operator]);
 				fprintf(app->output_stream, "result: %lld\n", get_int64_signed_value(app->result.value));
 				memory_view(app->result.value, 64, app->output_stream);
 				break;
@@ -298,7 +296,7 @@ int app_calculate(calc_app_t* app) {
 		status_code = app->calc->modulo(app->calc, app->oprand_1.value, app->oprand_2.value, app->result.value);
 		break;
 	default:
-		status_code = INVALID_SIZE;
+		status_code = INVALID_OPERATOR;
 		goto exit;
 	}
 exit:
@@ -332,7 +330,7 @@ int app_set_oprands(calc_app_t* app, value_t oprand_1, value_t oprand_2) {
 			*(int64_unsigned*)app->oprand_2.value = *(int64_unsigned*)oprand_2;
 			break;
 		default:
-			status_code = INVALID_SIZE;
+			status_code = INVALID_OPERATOR;
 			goto exit;
 			break;
 		}
@@ -404,7 +402,7 @@ int app_switch_operator(calc_app_t* app, enum Operator op) {
 		app->current_operator = op;
 		break;
 	default:
-		status_code = INVALID_SIZE;
+		status_code = INVALID_OPERATOR;
 		goto exit;
 	}
 exit:
@@ -475,7 +473,8 @@ exit:
 	return status_code;
 }
 
-int app_main_loop(FILE* in_stream,FILE* out_stream){
+int app_main_loop(FILE* in_stream,FILE* out_stream,enum Size size,enum Mode mode,bool is_unsigned){
+	int scanf_code = 0;
 	int status_code = SUCCESS;
 	char* stream_state = NULL;
 	char switch_[16] = {0};
@@ -483,12 +482,12 @@ int app_main_loop(FILE* in_stream,FILE* out_stream){
 	char unsigned_[16] = {0};
 	const int max_retry_count = 3;
 	int try_count = 0;
-	char input_buffer[128] = {0};
+	char input_buffer[256] = {0};
 	enum Operator next_op = NOTHING;
-	enum Size next_size = size_32;
-	enum Mode next_mode = int_mode;
-	bool unsigned_flag = false;
-	int size_value = size_32;
+	enum Size next_size = size;
+	enum Mode next_mode = mode;
+	bool unsigned_flag = is_unsigned;
+	int size_value = size;
 	value_slot oprand_1 = {0};
 	value_slot oprand_2 = {0};
 	calc_app_t* app = NULL;
@@ -498,7 +497,7 @@ int app_main_loop(FILE* in_stream,FILE* out_stream){
 	}
 entry:
 	calc_app_destroy(app);
-	app = new_calc_app(int_mode,size_32,false,out_stream);
+	app = new_calc_app(mode,size,is_unsigned,out_stream);
 	if (app == NULL ){
 		status_code = NULL_POINTER;
 	}
@@ -509,7 +508,7 @@ entry:
 	if (try_count == max_retry_count){
 		goto exit;
 	}
-swith_mode:
+switch_mode:
 	if (status_code != NULL_POINTER){
 		status_code = app->switch_mode(app,next_mode,next_size,unsigned_flag);
 		if (status_code != SUCCESS){
@@ -625,13 +624,21 @@ command:
 	if (stream_state == NULL){
 		goto exit;
 	}
-	sscanf(input_buffer,"%15s %15s %d",switch_,mode_,&size_value);
+	scanf_code = sscanf(input_buffer, "%15s %15s %d", switch_, mode_, &size_value);
 	next_size = (enum Size)size_value;
 	if (strcmp(switch_, "exit") == 0) {
 		goto exit;
 	}
 	if (strcmp(switch_, "quit") == 0) {
 		goto exit;
+	}
+
+	if (strcmp(switch_, "goback") == 0) {
+		goto switch_mode;
+	}
+	if (scanf_code != 3) {
+		status_code = INVALID_SIZE;
+		goto error_treat;
 	}
 	if (strcmp(switch_, "switch") != 0) {
 		status_code = INVALID_SIZE;
@@ -663,23 +670,36 @@ command:
 		status_code = INVALID_SIZE;
 		goto error_treat;
 	}
-	goto swith_mode;
+	goto switch_mode;
 error_treat:
 	switch(status_code){
 	case NULL_POINTER:
 		goto entry;
 		break;
 	case SUCCESS:
+		app->save_last(app);
+		goto app_calculation;
+	case INVALID_OPERATOR:
+		fprintf(app->output_stream, ">[error] not a valid operator: %sLast:\n",input_buffer);
+		app->get_last(app);
+		app->value_display(app);
 		goto app_calculation;
 	case INVALID_SIZE:
 		fprintf(app->output_stream,">[invalid command] %s",input_buffer);
 		goto command;
 	case INTEGER_ZERO_DIVISION:
 		fprintf(app->output_stream,">[error] zero division in integer mode\nLast:\n");
+		app->get_last(app);
 		app->value_display(app);
 		goto app_calculation;
 	case SHIFT_OVERFLOWED:
 		fprintf(app->output_stream,">[error] shift count overflowed\nLast:\n");
+		app->get_last(app);
+		app->value_display(app);
+		goto app_calculation;
+	case INTEGER_DIVISION_OVERFLOW:
+		fprintf(app->output_stream, ">[error] integer division overflowed\nLast:\n");
+		app->get_last(app);
 		app->value_display(app);
 		goto app_calculation;
 	default:
@@ -690,6 +710,91 @@ exit:
 }
 
 int run_app(int argc,char** argv) {
+	char config_mode[32] = {0};
+	char config_is_unsigned[32] = {0};
+	char config_value_size[32] = {0};
+	enum Mode mode;
+	enum Size size;
+	bool is_unsigned = false;
+	FILE* config = fopen("calc_app_config","r");
+	if (config == NULL) {
+		config = fopen("calc_app_config","w");
+		if (config == NULL) {
+			perror("Can not create file, please check your permission settings");
+			goto invalid_file_content;
+		}
+		fprintf(config, "mode = int\nsize = 32\nunsigned = false");
+		fclose(config);
+		config = fopen("calc_app_config","r");
+	}
+	void* stream_state = fgets(config_mode, sizeof(config_mode), config);
+	if (stream_state == NULL) {
+		fclose(config);
+		goto invalid_file_content;
+	}
+	stream_state = fgets(config_value_size, sizeof(config_value_size), config);
+	if (stream_state == NULL) {
+		fclose(config);
+		goto invalid_file_content;
+	}
+	stream_state = fgets(config_is_unsigned, sizeof(config_is_unsigned), config);
+	if (stream_state == NULL) {
+		fclose(config);
+		goto invalid_file_content;
+	}
+	fclose(config);
+check_mode:
+	if (strncmp(config_mode + 7, "float", 5) == 0) {
+		mode = float_mode;
+		goto check_size;
+	}
+	if (strncmp(config_mode + 7, "int", 3) == 0) {
+		mode = int_mode;
+		goto check_size;
+	}
+	goto invalid_file_content;
+check_size:
+	if (sscanf(config_value_size + 7, "%d", (int*) & size) == 1) {
+		if (mode == float_mode) {
+			switch (size)
+			{
+			case size_32:
+			case size_64:
+				goto success_loaded;
+			default:
+				size = size_32;
+				goto success_loaded;
+			}
+		}
+		if (mode == int_mode) {
+			switch (size) {
+			case size_8:
+			case size_16:
+			case size_32:
+			case size_64:
+				goto check_signed;
+			default:
+				goto invalid_file_content;
+			}
+		}
+	}
+	goto invalid_file_content;
+check_signed:
+	if (strncmp(config_is_unsigned + 11, "true", 4) == 0) {
+		is_unsigned = true;
+		goto success_loaded;
+	}
+	if (strncmp(config_is_unsigned + 11, "false", 5) == 0) {
+		is_unsigned = false;
+		goto success_loaded;
+	}
+	is_unsigned = false;
+	goto success_loaded;
+invalid_file_content:
+	mode = int_mode;
+	size = size_32;
+	is_unsigned = false;
+success_loaded:
 	int status_code = SUCCESS;
 	FILE* in_stream = NULL;
 	FILE* out_stream = NULL;
@@ -723,6 +828,7 @@ int run_app(int argc,char** argv) {
 	if (in_path != NULL) {
 		in_stream = fopen(in_path,"r");
 		if (in_stream == NULL) {
+			fprintf(stderr, "The file after -in is not exist\n");
 			status_code = NULL_POINTER;
 			goto exit;
 		}
@@ -730,12 +836,13 @@ int run_app(int argc,char** argv) {
 	if (out_path != NULL) {
 		out_stream = fopen(out_path,"w");
 		if (out_stream == NULL) {
+			fprintf(stderr, "The file after -out is not exist\n");
 			status_code = NULL_POINTER;
 			goto exit;
 		}
 	}
 main_loop:
-	status_code = app_main_loop(in_stream,out_stream);
+	status_code = app_main_loop(in_stream,out_stream,size,mode,is_unsigned);
 exit:
 	if (in_stream != NULL && in_stream != stdin) {
 		fclose(in_stream);
