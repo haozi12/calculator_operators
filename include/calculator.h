@@ -37,8 +37,8 @@ struct calculator {
 
 calculator_t* new_calculator(enum Mode mode, enum Size size, bool unsigned_flag);
 int calculator_switch_mode(calculator_t* calc, enum Mode mode, enum Size size, bool unsigned_flag);
-int save_value_to_calculator(calculator_t* calc, value_t value);
-int get_value_from_calculator(calculator_t* calc, value_t value);
+int save_Last(calculator_t* calc, value_t op_1, value_t op_2, value_t result, enum Operator op);
+int get_Last(calculator_t* calc, value_t op_1, value_t op_2, value_t result, enum Operator *op);
 void calculator_destroy(calculator_t* calc);
 
 #endif
