@@ -536,7 +536,9 @@ switch_mode:
 		goto error_treat;
 	}
 app_calculation:
-	fprintf(app->output_stream,">oprand_1:");
+	if (in_stream == stdin) {
+		fprintf(app->output_stream, ">oprand_1:");
+	}
 	stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 	if (stream_state == NULL){
 		goto exit;
@@ -548,7 +550,9 @@ app_calculation:
 	if (status_code != SUCCESS){
 		goto error_treat;
 	}
-	fprintf(app->output_stream,">oprand_2:");
+	if (in_stream == stdin) {
+		fprintf(app->output_stream, ">oprand_2:");
+	}
 	stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 	if (stream_state == NULL){
 		goto exit;
@@ -560,7 +564,9 @@ app_calculation:
 	if (status_code != SUCCESS){
 		goto error_treat;
 	}
-	fprintf(app->output_stream,">operator:");
+	if (in_stream == stdin) {
+		fprintf(app->output_stream, ">operator:");
+	}
 	stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 	if (stream_state == NULL){
 		goto exit;
@@ -619,7 +625,9 @@ app_calculation:
 	status_code = app->value_display(app);
 	goto error_treat;
 command:
-	fprintf(app->output_stream,">command:");
+	if (in_stream == stdin) {
+		fprintf(app->output_stream, ">command:");
+	}
 	stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 	if (stream_state == NULL){
 		goto exit;
@@ -649,7 +657,9 @@ command:
 	}
 	else if (strcmp(mode_,"int") == 0){
 		next_mode = int_mode;
-		fprintf(app->output_stream,">unsigned?:");
+		if (in_stream == stdin) {
+			fprintf(app->output_stream, ">unsigned?:");
+		}
 		stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 		if (stream_state == NULL){
 			goto exit;
