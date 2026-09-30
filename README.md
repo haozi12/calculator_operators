@@ -1,51 +1,70 @@
 # calculator_operators
 
-This project contains a console calculator app built around `app_10.c`. It supports both integer and floating-point calculations, variable operand sizes, bitwise operators, and interactive mode switching.
+This project is a low-level calculator written in C. It combines a calculator engine, memory/value-slot helpers, and a console interface to support arithmetic and bitwise operations across integer and floating-point modes.
 
-## What the app does
+## Overview
 
-`app_10.c` creates a `calc_app_t` object that wraps a low-level calculator engine. The app can:
+The latest source layout includes:
 
-- work in `int` mode or `float` mode
-- use operand sizes `8`, `16`, `32`, or `64` bits
-- use signed or unsigned integer mode
-- perform arithmetic and bitwise operations
-- print the result and memory view of the value
-- accept input from stdin or from a file via command-line arguments
+- `app_10.c` – main application, interactive loop, command parsing, CLI flags, and result output
+- `calculator_proc.c` – calculator engine setup, mode switching, operation dispatch, and last-result tracking
+- `slot_io.c` – value-slot input/output helpers for reading and writing numeric values
+- `memory_view.c` – memory visualization for the computed value
+- `add.c`, `subtract.c`, `multiply.c`, `divide.c`, `modulo.c` – arithmetic operations
+- `and.c`, `or.c`, `xor.c`, `not.c`, `shift_left.c`, `shift_right.c` – bitwise and shift operations
+- `include/` – shared headers for types, status codes, operator definitions, and the calculator API
 
-Supported operators:
+## Supported modes and operations
 
-- Bitwise: `xor`, `and`, `or`, `not`, `shl`, `shr`
-- Arithmetic: `add`, `sub`, `mul`, `div`, `mod`
+The app supports:
 
-The app also checks for common runtime issues, such as:
+- integer mode: 8, 16, 32, and 64-bit values
+- signed and unsigned integer input
+- floating-point mode: 32-bit and 64-bit values
+- arithmetic operators:
+  - `add`
+  - `sub`
+  - `mul`
+  - `div`
+  - `mod`
+- bitwise operators:
+  - `xor`
+  - `and`
+  - `or`
+  - `not`
+  - `shl`
+  - `shr`
 
-- invalid size selection
-- division by zero in integer mode
-- shift count overflow
-- null pointer errors
+The engine tracks the last successful operation and can restore previous operands/results when an error occurs.
 
-## How the program works
+## Runtime behavior
 
-When the program starts, it creates a default calculator in:
+The calculator starts with a default configuration stored in `calc_app_config` if the file does not exist:
 
-- mode: integer
-- size: 32-bit
-- sign: signed
+```text
+mode = int
+size = 32
+unsigned = false
+```
 
-Then it asks for:
+At runtime the application prints the selected mode and size, then asks for:
 
 1. `oprand_1`
 2. `oprand_2`
 3. `operator`
 
-After calculation it prints the result and memory representation.
-
-You can also enter a command at the prompt by typing `?`, then switching mode or exiting the app.
+If a runtime error occurs, the app reports it and restores the last valid result.
 
 ## Interactive usage
 
-The app works in a terminal session. Example flow:
+Compile the project and run it:
+
+```bash
+gcc -std=c11 -O2 -fno-strict-aliasing *.c -I. -o calculator
+./calculator
+```
+
+Then enter values in the terminal. Example:
 
 ```text
 >[mode] int 32 signed
@@ -57,7 +76,9 @@ oprand_2: 5
 result: 17
 ```
 
-To switch modes:
+The application also accepts interactive command mode by entering `?` at a prompt.
+
+Example:
 
 ```text
 >? 
@@ -65,61 +86,117 @@ To switch modes:
 >unsigned?: true
 ```
 
-or
+Or switch to floating point mode:
 
 ```text
 >? 
 >command: switch float 64
 ```
 
-Available command options:
+Available command actions:
 
 - `switch int 8|16|32|64`
 - `switch float 32|64`
 - `exit`
 - `quit`
+- `goback`
+
+In integer mode the app prompts for sign mode after switching, using:
+
+- `true` for unsigned
+- `false` for signed
 
 ## File input and output
 
-You can run the app with files instead of interactive console input:
+The latest source supports reading input and writing output through command-line arguments:
 
 ```bash
 ./calculator -in input.txt -out output.txt
 ```
 
-- `-in` reads commands and values from a text file
-- `-out` writes the app output to a file
-- if no arguments are given, it uses `stdin` and `stdout`
+- `-in` loads calculator commands and values from a text file
+- `-out` writes printed output to a file
+- if no arguments are provided, stdin/stdout are used
 
-## Compile instructions
+## Project structure details
 
-Important: compile with the `-fno-strict-aliasing` option. This project does low-level value casting and pointer reinterpretation, and GCC/Clang can otherwise optimize in a way that changes behavior.
+### Core headers
 
-### GCC
+#### `include/workspace.h`
+Defines shared types, status codes, operators, and value-slot storage used by the calculator and helper functions.
+
+#### `include/calculator.h`
+Defines the calculator engine structure and API for:
+
+- creation
+- mode switching
+- result tracking
+- cleanup
+
+#### `include/operator.h`
+Declares the arithmetic and bitwise operator function signatures.
+
+### Runtime engine
+
+`calculator_proc.c` implements:
+
+- `new_calculator()`
+- `calculator_switch_mode()`
+- `save_Last()` / `get_Last()`
+- `calculator_destroy()`
+
+It sets function pointers for all supported operators and stores the current calculation mode and size.
+
+### Main application flow
+
+`app_10.c` implements:
+
+- app creation and teardown
+- operand assignment and validation
+- calculation dispatch
+- shift overflow checks
+- result display
+- interactive command parsing
+- CLI processing for file input/output
+
+This is the entry point for the console interface and is the file that drives the actual user experience.
+
+## Compile notes
+
+Important: compile with the following flag because the project performs low-level value casting and byte reinterpretation:
+
+```bash
+-fno-strict-aliasing
+```
+
+Recommended build command:
 
 ```bash
 gcc -std=c11 -O2 -fno-strict-aliasing *.c -I. -o calculator
 ```
 
-### Clang
-
-```bash
-clang -std=c11 -O2 -fno-strict-aliasing *.c -I. -o calculator
-```
-
-If you prefer to compile only the main app source with all helper files explicitly listed, use:
+If you want to compile only the main sources explicitly:
 
 ```bash
 gcc -std=c11 -O2 -fno-strict-aliasing app_10.c calculator_proc.c slot_io.c memory_view.c add.c subtract.c multiply.c divide.c modulo.c and.c or.c xor.c not.c shift_left.c shift_right.c -I. -o calculator
 ```
 
-### Notes
+## Error handling
 
-- `-I.` tells the compiler to include the project root and header directory structure.
-- The `-fno-strict-aliasing` flag is intentionally required for this project.
-- If you get compiler warnings about `strtoull`, `strtoll`, or `atof`, they are usually harmless for this app, but using a modern C standard is recommended.
+The current implementation checks for common runtime conditions, including:
+
+- invalid size selection
+- invalid operator input
+- division by zero in integer mode
+- shift count overflow
+- integer division overflow conditions
+- null pointer errors
+
+These errors are reported to the console and the app can continue using the last valid calculation state.
 
 ## Example commands
+
+Integer example:
 
 ```text
 >oprand_1: 10
@@ -127,7 +204,7 @@ gcc -std=c11 -O2 -fno-strict-aliasing app_10.c calculator_proc.c slot_io.c memor
 >operator: mod
 ```
 
-Result:
+Output:
 
 ```text
 oprand_1: 10
@@ -143,7 +220,7 @@ Bitwise example:
 >operator: and
 ```
 
-Result:
+Output:
 
 ```text
 oprand_1: 12
@@ -151,31 +228,13 @@ oprand_2: 10
 result: 8
 ```
 
-## Notes about the implementation
+## Notes
 
-The project is designed as a bit-level calculator using custom `value_slot` memory blocks and function pointers. This is useful for experimenting with:
+This project is designed for experimentation with low-level numeric representation and bit manipulation. It is useful for observing:
 
 - integer overflow behavior
 - bitwise transformations
-- floating-point value printing
-- low-level memory representation
+- floating-point storage and display
+- memory layout at the binary level
 
-This makes it a good tool for studying how data is stored and manipulated at the binary level.
-
-## Quick start
-
-```bash
-gcc -std=c11 -O2 -fno-strict-aliasing *.c -I. -o calculator
-./calculator
-```
-
-Then type values and operators in the terminal.
-
-## Troubleshooting
-
-- If the compiled app exits immediately, make sure you are compiling all source files, not just `app_10.c`.
-- If you see incorrect results, confirm the `-fno-strict-aliasing` flag is present.
-- If you enter a shift count larger than the selected bit width, the app will report `SHIFT_OVERFLOWED`.
-- If you divide by zero in integer mode, the app reports `INTEGER_ZERO_DIVISION`.
-
-
+This makes the project suitable for learning how values are stored and processed in C at a very low level.
