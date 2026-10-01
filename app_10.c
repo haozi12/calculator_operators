@@ -9,6 +9,26 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+
+#ifdef _WIN32
+#include <io.h>
+#define fileno _fileno
+#define isatty _isatty
+#else
+#include <unistd.h>
+#endif
+
+static int stream_is_tty(FILE* stream) {
+	if (stream == NULL) {
+		return 0;
+	}
+	int fd = fileno(stream);
+	if (fd == -1) {
+		return 0;
+	}
+	return isatty(fd);
+}
+
 const char* calc_ops[] = {"nothing","xor","and","or","not","shift_left","shift_right","add","subtract","multiply","divide","modulo"};
 typedef struct calc_app_t calc_app_t;
 
@@ -474,6 +494,7 @@ exit:
 }
 
 int app_main_loop(FILE* in_stream,FILE* out_stream,enum Size size,enum Mode mode,bool is_unsigned){
+	int interactive = stream_is_tty(in_stream);
 	int scanf_code = 0;
 	int status_code = SUCCESS;
 	char* stream_state = NULL;
@@ -536,8 +557,8 @@ switch_mode:
 		goto error_treat;
 	}
 app_calculation:
-	if (in_stream == stdin) {
-		fprintf(app->output_stream, ">oprand_1:");
+	if (interactive) {
+		fprintf(stderr, ">oprand_1:");
 	}
 	stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 	if (stream_state == NULL){
@@ -550,8 +571,8 @@ app_calculation:
 	if (status_code != SUCCESS){
 		goto error_treat;
 	}
-	if (in_stream == stdin) {
-		fprintf(app->output_stream, ">oprand_2:");
+	if (interactive) {
+		fprintf(stderr, ">oprand_2:");
 	}
 	stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 	if (stream_state == NULL){
@@ -564,8 +585,8 @@ app_calculation:
 	if (status_code != SUCCESS){
 		goto error_treat;
 	}
-	if (in_stream == stdin) {
-		fprintf(app->output_stream, ">operator:");
+	if (interactive) {
+		fprintf(stderr, ">operator:");
 	}
 	stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 	if (stream_state == NULL){
@@ -625,8 +646,8 @@ app_calculation:
 	status_code = app->value_display(app);
 	goto error_treat;
 command:
-	if (in_stream == stdin) {
-		fprintf(app->output_stream, ">command:");
+	if (interactive) {
+		fprintf(stderr, ">command:");
 	}
 	stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 	if (stream_state == NULL){
@@ -657,8 +678,8 @@ command:
 	}
 	else if (strcmp(mode_,"int") == 0){
 		next_mode = int_mode;
-		if (in_stream == stdin) {
-			fprintf(app->output_stream, ">unsigned?:");
+		if (interactive) {
+			fprintf(stderr, ">unsigned?:");
 		}
 		stream_state = fgets(input_buffer,sizeof(input_buffer),in_stream);
 		if (stream_state == NULL){
