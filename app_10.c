@@ -737,6 +737,7 @@ error_treat:
 		break;
 	}
 exit:
+	calc_app_destroy(app);
 	return status_code;
 }
 
