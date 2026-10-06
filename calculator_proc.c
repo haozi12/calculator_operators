@@ -1,6 +1,5 @@
 #include "include/calculator.h"
 #include "include/operator.h"
-#include "include/memory_view.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdalign.h>
@@ -177,7 +176,7 @@ exit:
 int save_Last(calculator_t* calc, value_t op_1, value_t op_2,value_t result, enum Operator op)
 {
 	int status_code = SUCCESS;
-	if (calc == NULL || calc->data == NULL || op_1 == NULL || op_2 == NULL) {
+	if (calc == NULL || calc->data == NULL || op_1 == NULL || op_2 == NULL || result == NULL) {
 		status_code = NULL_POINTER;
 		goto exit;
 	}
@@ -191,7 +190,7 @@ exit:
 
 int get_Last(calculator_t* calc, value_t op_1 , value_t op_2,value_t result,enum Operator *op) {
 	int status_code = SUCCESS;
-	if (calc == NULL || calc->data == NULL || op_1 == NULL || op_2 == NULL) {
+	if (calc == NULL || calc->data == NULL || op_1 == NULL || op_2 == NULL || result == NULL || op == NULL) {
 		status_code = NULL_POINTER;
 		goto exit;
 	}

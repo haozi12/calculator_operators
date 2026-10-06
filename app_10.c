@@ -4,7 +4,6 @@
 #include "include/workspace.h"
 #include "include/calculator.h"
 #include "include/memory_view.h"
-#include <stdalign.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -666,11 +665,11 @@ command:
 		goto switch_mode;
 	}
 	if (scanf_code != 3) {
-		status_code = INVALID_SIZE;
+		status_code = INVALID_COMMAND;
 		goto error_treat;
 	}
 	if (strcmp(switch_, "switch") != 0) {
-		status_code = INVALID_SIZE;
+		status_code = INVALID_COMMAND;
 		goto error_treat;
 	}
 	if (strcmp(mode_,"float") == 0){
@@ -693,12 +692,12 @@ command:
 			unsigned_flag = false;
 		}
 		else{
-			status_code = INVALID_SIZE;
+			status_code = INVALID_COMMAND;
 			goto error_treat;
 		}
 	}
 	else{
-		status_code = INVALID_SIZE;
+		status_code = INVALID_COMMAND;
 		goto error_treat;
 	}
 	goto switch_mode;
@@ -716,6 +715,9 @@ error_treat:
 		app->value_display(app);
 		goto app_calculation;
 	case INVALID_SIZE:
+		fprintf(app->output_stream, ">[invalid command] not a supported size: %d\n", size_value);
+		goto command;
+	case INVALID_COMMAND:
 		fprintf(app->output_stream,">[invalid command] %s",input_buffer);
 		goto command;
 	case INTEGER_ZERO_DIVISION:
@@ -887,6 +889,7 @@ exit:
 
 int main(int argc,char** argv) {
 	return run_app(argc,argv);
+	//return app_main_loop(stdin, stdout, size_32, int_mode, false);
 }
 
 // 运行程序: Ctrl + F5 或调试 >“开始执行(不调试)”菜单
